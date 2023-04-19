@@ -1,11 +1,6 @@
 package com.trybe.consultafilmes;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.emptySet;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,28 +25,12 @@ public class Consultas {
    * </p>
    */
   public Set<String> atoresQueInterpretaramSiProprios() {
-    Set<String> atores = null;
+    Set<String> atores = filmes.stream()
+        .flatMap(filme -> filme.atoresPorPersonagem.keySet().stream()
+            .filter(personagem -> filme.atoresPorPersonagem.get(personagem).contains(personagem)))
+        .collect(Collectors.toSet());
 
-    List<String> personagens =
-        filmes.stream().flatMap(filme -> filme.personagens.stream()).collect(Collectors.toList());
-
-    List<Set<String>> atoresporPersonagem = filmes.stream()
-        .flatMap(filme -> filme.atoresPorPersonagem.values().stream()).collect(Collectors.toList());
-
-    for (short index = 0; index < personagens.size(); index++) {
-      String personagem = personagens.get(index);
-      Set<String> tal = atoresporPersonagem.get(index);
-      if (tal.contains(personagem)) {
-        atores.add(personagem);
-      }
-
-    }
-
-    if (atores != null) {
-      return atores;
-    }
-
-    return emptySet(); // TODO: Implementar.
+    return atores; // TODO: Implementar.
   }
 
   /**
@@ -66,24 +45,11 @@ public class Consultas {
    * </p>
    */
   public List<String> atoresQueAtuaramEmFilmesDoDiretorEmOrdemAlfabetica(String diretor) {
-    List<String> atores = null;
+    List<String> filmesDoDiretor = filmes.stream()
+        .filter(filme -> filme.diretores.contains(diretor)).flatMap(filme -> filme.atores.stream())
+        .distinct().sorted().collect(Collectors.toList());
 
-    for (Filme filme : filmes) {
-      if (filme.diretores.contains(diretor)) {
-        for (String ator : filme.atores) {
-          atores.add(ator);
-        }
-
-      }
-    }
-
-    if (atores.size() > 0) {
-      Collections.sort(atores);
-
-      return atores;
-    }
-
-    return emptyList(); // TODO: Implementar.
+    return filmesDoDiretor; // TODO: Implementar.
   }
 
   /**
@@ -97,31 +63,12 @@ public class Consultas {
    * </p>
    */
   public List<Filme> filmesEmQuePeloMenosUmDiretorAtuouMaisRecentesPrimeiro() {
-    List<Filme> filmesRetorno =
-        filmes.stream().filter(filme -> diretorAtua(filme)).collect(Collectors.toList());
+    List<Filme> result =
+        filmes.stream().filter(filme -> filme.atores.stream().anyMatch(filme.diretores::contains))
+            .distinct().sorted((acc, curr) -> curr.anoDeLancamento - acc.anoDeLancamento)
+            .collect(Collectors.toList());
 
-    if (filmesRetorno.size() > 0) {
-      Collections.sort(filmesRetorno, (acc, cur) -> acc.anoDeLancamento - cur.anoDeLancamento);
-      return filmesRetorno;
-    }
-
-    return emptyList(); // TODO: Implementar.
-  }
-
-  private boolean diretorAtua(Filme filme) {
-    List<String> diretores = new ArrayList<String>(filme.diretores);
-
-    List<Set<String>> atoresporPersonagem =
-        filme.atoresPorPersonagem.values().stream().collect(Collectors.toList());
-
-    for (short index = 0; index < diretores.size(); index++) {
-      String diretor = diretores.get(index);
-      if (atoresporPersonagem.get(index).contains(diretor)) {
-        return true;
-      }
-    }
-
-    return false;
+    return result;
   }
 
   /**
@@ -134,6 +81,11 @@ public class Consultas {
    * </p>
    */
   public Map<String, Set<Filme>> filmesLancadosNoAnoAgrupadosPorCategoria(int ano) {
-    return emptyMap(); // TODO: Implementar (bônus).
+    Set<Filme> setFilmes =
+        filmes.stream().filter(filme -> filme.anoDeLancamento == ano).collect(Collectors.toSet());
+
+    return setFilmes.stream().flatMap(filme -> filme.categorias.stream()).distinct().sorted()
+        .collect(Collectors.toMap(categoria -> categoria, categoria -> setFilmes.stream()
+            .filter(filme -> filme.categorias.contains(categoria)).collect(Collectors.toSet())));
   }
 }
